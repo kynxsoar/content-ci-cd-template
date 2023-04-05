@@ -148,3 +148,17 @@ jobs:
             else
               echo "No packs has changed, skipping step."
             fi
+      - name: Upload Production Packs to Azure Storage Account
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.30.0
+          inlineScript: |
+            cd $GITHUB_WORKSPACE/repository/
+            for file in $ARTIFACTS_FOLDER/uploadable_packs/*
+            do
+              az storage blob upload --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.STORAGE_KEY }} --container-name ${{ secrets.CONTAINER_NAME }} --file $file  --name "production/packs/$(basename -- $file .zip)/$(cat CurrentVersion.txt)/$(basename -- $file)"
+            done
+
+
+
