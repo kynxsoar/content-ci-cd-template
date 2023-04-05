@@ -132,6 +132,7 @@ jobs:
         run: echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >>$GITHUB_OUTPUT
         id: extract_branch
       - name: Upload Packs to Azure Storage Account
+        if: github.event_name == 'push' && github.ref != 'refs/heads/master'
         env:
           REF: ${{ github.ref }}
         uses: azure/CLI@v1
@@ -154,11 +155,15 @@ jobs:
         with:
           azcliversion: 2.30.0
           inlineScript: |
-            cd $GITHUB_WORKSPACE/repository/
-            for file in $ARTIFACTS_FOLDER/uploadable_packs/*
-            do
-              az storage blob upload --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.STORAGE_KEY }} --container-name ${{ secrets.CONTAINER_NAME }} --file $file  --name "production/packs/$(basename -- $file .zip)/$(cat CurrentVersion.txt)/$(basename -- $file)"
-            done
+            if [ $PACKS_CHANGED ]; then
+              cd $GITHUB_WORKSPACE/repository/
+              for file in $ARTIFACTS_FOLDER/uploadable_packs/*
+              do
+                az storage blob upload --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} --account-key ${{ secrets.STORAGE_KEY }} --container-name ${{ secrets.CONTAINER_NAME }} --file $file  --name "production/packs/$(basename -- $file .zip)/$(cat CurrentVersion.txt)/$(basename -- $file)"
+              done
+            else
+              echo "No packs has changed, skipping step."
+            fi
 
 
 
